@@ -9,6 +9,10 @@ from Bio import SeqFeature
 inputFile = "vectors-100.gb"
 
 
+'''Initialise dictionary'''
+featureDict = dict()
+
+
 # Define interested tags!
 interested_tags = ['promoter', 'CDS', 'polyA_signal','rep_origin', 'primer_bind',
  'terminator', 'protein_bind', 'misc_binding', 'misc_recomb', 'oriT', 'LTR',
@@ -25,6 +29,11 @@ for search in record:
             if feature.type in interested_tags:
                 start = feature.location.start.position+1
                 end = feature.location.end.position
-                d = dict([(feature.type, search.seq[start:end])])
-                print(d)
+                featureDict[search.seq[start:end]] = feature.type
+
+
+
+print(featureDict)
+print(len(featureDict))
+
 
