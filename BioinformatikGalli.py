@@ -106,15 +106,27 @@ for search in record:
 
 '''Manage the Dictionary'''
 CounterInformation = Counter(storage)
+
+for k in list(CounterInformation):
+        if CounterInformation[k] <= 2:
+            del CounterInformation[k]
+            del featureDict[k]
+
+
 testDict.update(CounterInformation)
+
 
 '''Create correct Dictionary'''
 finalDictionary = defaultdict(list)
 for a, b in chain(featureDict.items(), testDict.items()):
     finalDictionary[a].append(b)
 
-print(finalDictionary.values())
-print(finalDictionary.keys())
 
-for i in finalDictionary.items():
-    print(i)
+for k in list(finalDictionary.keys()):
+    if len(k) <= 10:
+        del finalDictionary[k]
+        del featureDict[k]
+
+counter = 0
+
+print(len(finalDictionary))
