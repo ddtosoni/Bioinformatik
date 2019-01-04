@@ -1,12 +1,15 @@
 from Bio import SeqIO
 from collections import Counter
+from itertools import chain
+from collections import defaultdict
 
 
 '''File to read'''
-inputFile = "vectors-100.gb"
+inputFile = "vectors.gb"
 
 '''Initialise dictionary'''
 featureDict = dict()
+testDict = dict()
 
 '''Initialise Containers'''
 storage = []
@@ -32,14 +35,15 @@ interested_product = ['tRNA', 'rRNA']  # product
 
 record = SeqIO.parse(inputFile, "genbank")
 
+
 for search in record:
     if len(search.seq) >= 1500:
         for feature in search.features:
             if feature.type in interested_only_note:
                 try:
                     featureDict[feature.location.extract(search).seq] = (feature.type, feature.qualifiers['note'])
-                    value = feature.type + " " + feature.location.extract(search).seq
-                    storage.append(value)
+
+                    storage.append(feature.location.extract(search).seq)
 
                 except:  # (RuntimeError, TypeError, NameError):
                     break
@@ -49,8 +53,7 @@ for search in record:
                     featureDict[feature.location.extract(search).seq] = (feature.type, feature.qualifiers['note'],
                                                                          feature.qualifiers['gene'])
 
-                    value = feature.type + " " + feature.location.extract(search).seq
-                    storage.append(value)
+                    storage.append(feature.location.extract(search).seq)
 
                 except:  # (RuntimeError, TypeError, NameError):
                     break
@@ -60,8 +63,7 @@ for search in record:
                     featureDict[feature.location.extract(search).seq] = (feature.type, feature.qualifiers['product'],
                                                                          feature.qualifiers['gene'])
 
-                    value = feature.type + " " + feature.location.extract(search).seq
-                    storage.append(value)
+                    storage.append(feature.location.extract(search).seq)
 
                 except:  # (RuntimeError, TypeError, NameError):
                     break
@@ -71,17 +73,25 @@ for search in record:
                     featureDict[feature.location.extract(search).seq] = (feature.type, feature.qualifiers['note'],
                                                                          feature.qualifiers['bound_moiety'])
 
-                    value = feature.type + " " + feature.location.extract(search).seq
-                    storage.append(value)
+                    storage.append(feature.location.extract(search).seq)
 
                 except:  # (RuntimeError, TypeError, NameError):
+                    break
+
+            if feature.type in interested_note_and_mobile_element_type:
+                try:
+                    featureDict[feature.location.extract(search).seq] = (feature.type, feature.qualifiers['note'],
+                                                                         feature.qualifiers['mobile_element_type'])
+
+                    storage.append(feature.location.extract(search).seq)
+
+                except:
                     break
 
             if feature.type in interested_gene:
                 try:
                     featureDict[feature.location.extract(search).seq] = (feature.type, feature.qualifiers['gene'])
-                    value = feature.type + " " + feature.location.extract(search).seq
-                    storage.append(value)
+                    storage.append(feature.location.extract(search).seq)
 
                 except:  # (RuntimeError, TypeError, NameError):
                     break
@@ -89,17 +99,22 @@ for search in record:
             if feature.type in interested_product:
                 try:
                     featureDict[feature.location.extract(search).seq] = (feature.type, feature.qualifiers['product'])
-                    value = feature.type + " " + feature.location.extract(search).seq
-                    storage.append(value)
+                    storage.append(feature.location.extract(search).seq)
 
                 except:  # (RuntimeError, TypeError, NameError):
                     break
 
-print(featureDict)
-print(len(featureDict))
-
-
+'''Manage the Dictionary'''
 CounterInformation = Counter(storage)
-print(CounterInformation)
-print(len(CounterInformation))
+testDict.update(CounterInformation)
 
+'''Create correct Dictionary'''
+finalDictionary = defaultdict(list)
+for a, b in chain(featureDict.items(), testDict.items()):
+    finalDictionary[a].append(b)
+
+print(finalDictionary.values())
+print(finalDictionary.keys())
+
+for i in finalDictionary.items():
+    print(i)
