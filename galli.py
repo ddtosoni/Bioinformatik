@@ -137,22 +137,25 @@ for k in list(finalDictionary.keys()):
 
 testIt = dict()
 
-print("test")
-print(finalDictionary.items())
-print("test")
-
-for x, y in finalDictionary.values():
+for (x, y), z in zip(finalDictionary.values(), finalDictionary.keys()):
         insertKey = ''.join(str(vals) + ', ' for vals in x)
-        if testIt.get(insertKey) is None or y > testIt.get(insertKey):
-            testIt[insertKey] = y
+        insertKey = insertKey[:-2]
+        if testIt.get(insertKey) is None:
+            testIt[insertKey] = y, z
+        newVal = testIt.get(insertKey)[0]
+        if y > newVal:
+            testIt[insertKey] = y, z
 
-#newFinalDict = dict()
-#for a, b in chain(featureDict.items(), testIt.items()):
-#    newFinalDict[a].append(b)
+for i in testIt.items():
+    print(i)
+
+
+newFinalDict = dict()
+
 
 print("ULU")
-#for i in newFinalDict.items():
-#    print(i)
+for i in newFinalDict.items():
+    print(i)
 print("ULU")
 
 print(len(newFinalDict))
