@@ -2,10 +2,12 @@ from Bio import SeqIO
 from collections import Counter
 from itertools import chain
 from collections import defaultdict
+import pickle
+import csv
 
 
 '''File to read'''
-inputFile = "/Users/deniztosoni/FHNW/bioinformatik/daten plasmid annotation 2.0/vectors.gb"
+inputFile = "vectors.gb"
 
 '''Initialise dictionary'''
 featureDict = dict()
@@ -137,23 +139,17 @@ for k in list(finalDictionary.keys()):
 
 testIt = dict()
 
-print("test")
-print(finalDictionary.items())
-print("test")
+for (x, y), z in zip(finalDictionary.values(), finalDictionary.keys()):
+        insertKey = ''.join(str(vals) + ', ' for vals in x)
+        insertKey = insertKey[:-2]
+        if testIt.get(insertKey) is None:
+            testIt[insertKey] = y, z
+        newVal = testIt.get(insertKey)[0]
+        if y > newVal:
+            testIt[insertKey] = y, z
 
-for x, y in finalDictionary.values():
-    insertKey = ''.join(str(vals) + ', ' for vals in x)
-    if testIt.get(insertKey) is None or y > testIt.get(insertKey):
-        testIt[insertKey] = y
+print(len(testIt))
 
+with open('testDump.pickle', 'wb') as handle:
+    pickle.dump(testIt, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-#newFinalDict = dict()
-#for a, b in chain(featureDict.items(), testIt.items()):
-#    newFinalDict[a].append(b)
-
-print("ULU")
-#for i in newFinalDict.items():
-#    print(i)
-print("ULU")
-
-print(len(newFinalDict))
