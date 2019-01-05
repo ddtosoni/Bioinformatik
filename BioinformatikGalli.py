@@ -9,7 +9,7 @@ inputFile = "vectors.gb"
 
 '''Initialise dictionary'''
 featureDict = dict()
-testDict = dict()
+counterDict = dict()
 
 '''Initialise Containers'''
 storage = []
@@ -35,10 +35,12 @@ interested_product = ['tRNA', 'rRNA']  # product
 
 record = SeqIO.parse(inputFile, "genbank")
 
+x = []
 
 for search in record:
     if len(search.seq) >= 1500:
         for feature in search.features:
+            x.append(feature.type)
             if feature.type in interested_only_note:
                 try:
                     featureDict[feature.location.extract(search).seq] = (feature.type, feature.qualifiers['note'])
@@ -113,12 +115,12 @@ for k in list(CounterInformation):
             del featureDict[k]
 
 
-testDict.update(CounterInformation)
+counterDict.update(CounterInformation)
 
 
 '''Create correct Dictionary'''
 finalDictionary = defaultdict(list)
-for a, b in chain(featureDict.items(), testDict.items()):
+for a, b in chain(featureDict.items(), counterDict.items()):
     finalDictionary[a].append(b)
 
 
@@ -127,6 +129,9 @@ for k in list(finalDictionary.keys()):
         del finalDictionary[k]
         del featureDict[k]
 
-counter = 0
 
 print(len(finalDictionary))
+
+
+a = Counter(x)
+print(a)
