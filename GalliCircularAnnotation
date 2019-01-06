@@ -1,0 +1,83 @@
+from Bio import SeqIO
+from Bio.Seq import Seq
+from Bio.Alphabet import IUPAC
+from Bio.SeqFeature import SeqFeature, FeatureLocation
+from Bio.SeqFeature import CompoundLocation
+import re
+
+
+'''file input'''
+file = "pRN1.gb"  # Write path from file
+
+'''check file ending and read file'''
+if file.endswith('fasta'):
+    ending = "fasta"
+    fasta = True
+
+if file.endswith('gb'):
+    ending = "genbank"
+    fasta = False
+
+
+'''Ask motif'''
+motif = input("Search for Motif: ")  # Get user input
+motif = motif.upper()  # Switch user input in upper case
+print("You are looking for this motif: ", motif)
+
+
+'''check if palindromic'''
+checkMotif = Seq(motif)
+checkComplement = str(checkMotif.reverse_complement())
+
+
+if checkMotif == checkComplement:  # If complement is same as motif its palindromic
+    notes = {"note": "is Palindrome", "sequence": motif}
+    notes1 = {"note": "is Palindrome", "sequence": motif, "circular-found": "Yes"}
+
+else:  # If complement is not the same as the motif its not palindromic
+    motif = str(checkMotif.reverse_complement())  # Switch the motif to its complement
+    print("You wrote a non palindromic motif: ", motif)
+    notes = {"note": "is not palindromic", "sequence": checkMotif}
+    notes1 = {"note": "is not palindromic", "sequence": checkMotif, "circular-found": "Yes"}
+
+
+'''read in the data'''
+for record in SeqIO.parse(file, ending, IUPAC.ambiguous_dna):
+    record = record.upper()
+
+    if fasta is True:
+        conditions = True
+
+    elif record.annotations['topology'] == "circular":  # Optional task, check for circular dna
+        conditions = True
+
+    else:
+        conditions = False
+
+    record.features = []  # remove all features that have already been annotated in the genbank file
+    sequenceLength = (len(record.seq))
+    sequenceOriginal = record.seq
+    record.seq = record.seq+record.seq[0:len(motif)]
+
+    for match in re.finditer(motif, str(record.seq)):
+        if match.end() > sequenceLength:  # If the motif is at the circular position
+            if conditions is True:
+                feature = FeatureLocation(start=0, end=(match.end()-sequenceLength), strand=1)
+                feature1 = FeatureLocation(start=match.start(), end=sequenceLength, strand=1)
+                finalFeature = CompoundLocation([feature, feature1])
+                f = SeqFeature(finalFeature, type="motif-circular", qualifiers=notes1)
+                record.features.append(f)
+            else:
+                break
+        else:
+            feature = SeqFeature(FeatureLocation(start=match.start(), end=match.end()), type="motif",
+                                 qualifiers=notes, strand=1)
+            record.features.append(feature)
+
+    record.seq = sequenceOriginal
+
+
+'''save as genbank file'''
+output_file = open('example.gb', 'w')
+SeqIO.write(record, output_file, 'genbank')
+
