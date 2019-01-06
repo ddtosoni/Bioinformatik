@@ -3,7 +3,10 @@ from collections import Counter
 from itertools import chain
 from collections import defaultdict
 import pickle
-import csv
+from Bio.SeqFeature import SeqFeature, FeatureLocation
+from Bio.Blast import NCBIWWW, NCBIXML
+import os
+
 
 
 '''File to read'''
