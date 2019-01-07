@@ -56,16 +56,20 @@ from collections import defaultdict
 from itertools import chain
 from random import *
 import pickle
+import datetime
+import os
 # ------------------------------------------
 # File to read
 inputFile = "vectors.gb"
 
 # Initialise dictionary
 featureDict = dict()
-testDict = dict()
+saveDict = dict()
+resultDict = dict()
 
 # Initialise Containers
 counterStorage = []
+
 
 # Define tags
 interested_only_note = ['promoter', 'oriT', 'rep_origin', 'primer_bind', 'terminator', 'misc_signal', 'misc_recomb',
@@ -155,19 +159,17 @@ for k in list(CounterInformation):
         del featureDict[k]
         del CounterInformation[k]
 
-testDict.update(CounterInformation)
+saveDict.update(CounterInformation)
 
 # finalize the dictionary
 finalDictionary = defaultdict(list)
-for a, b in chain(featureDict.items(), testDict.items()):
+for a, b in chain(featureDict.items(), saveDict.items()):
     finalDictionary[a].append(b)
 
 for k in list(finalDictionary.keys()):
     if len(k) <= 10:
         del finalDictionary[k]
         del featureDict[k]
-
-resultDict = dict()
 
 for (x, y), z in zip(finalDictionary.values(), finalDictionary.keys()):
     insertKey = ''.join(str(vals) + ', ' for vals in x)
@@ -187,19 +189,31 @@ datapath = ""
 # Take 50 random plasmids from the file
 fiftyRandomPlasmids = []
 i = 0
+counter = 0
+
+#Use this section to check the first sequence from vectors.gb
+#for record in SeqIO.parse(datapath + "vectors.gb", "genbank"):
+#    if counter < 10:
+#        fiftyRandomPlasmids.append(record)
+#        counter += 1
+#        print(datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S ') + record.id + "\t " + str(counter))
+#        if counter == 1:
+#            break
+
+#Use this section to generate 50 random sequences from vectors.gb file
 for record in SeqIO.parse(datapath + "vectors.gb", "genbank"):
     x = randint(0, 1)
-    if x == 1 and i < 50:
+    if x == 1 and i < 30:
         fiftyRandomPlasmids.append(record)
         i = i + 1
         print("Following records will be checked:")
         print(record.id + "\t " + str(i))
 
-if i < 50:
+if i < 30:
     for record in SeqIO.parse(datapath + "vectors.gb", "genbank"):
         fiftyRandomPlasmids.append(record)
         i += 1
-        if i == 49:
+        if i == 29:
             break
 
 # Create primerBindingSites list from common_primer.mfasta
@@ -254,9 +268,7 @@ for plasmid in fiftyRandomPlasmids:
 
                 if foundPrim == bool(1):
                     plasmid.features.append(newPrimer)
-                    print("Primer found on strand 1, at position: " + str(i))
-                    print(longseqStart)
-                    print(longseqEnd)
+                    print(datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S ') + "Primer found on strand 1, at position: " + str(i))
 
                 # Reverse complement to find positions on strand -1
                 longseqRevStart = plasmidlen - (i + longseqlen)
@@ -274,17 +286,11 @@ for plasmid in fiftyRandomPlasmids:
 
                 if foundRevPrim == bool(1):
                     plasmid.features.append(newPrimer)
-                    print("Primer found on strand -1, at position:" + str(longseqRevStart))
-                    print(shortseqRevStart)
-                    print(longseqRevEnd)
+                    print(datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S ') + "Primer found on strand -1, at position: " + str(longseqRevStart))
 
             i += 1
 
-    print("ready")
-
-# Testoutput file after first task
-    # newFile = open("fileAfterPart1.gb", "w")
-    # SeqIO.write(fiftyRandomPlasmids, newFile, "genbank")
+    print(datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S '), "ready")
 
     vorderstrang = plasmid + plasmid
     vorderstrang.name = "strand 1"
@@ -300,15 +306,12 @@ for plasmid in fiftyRandomPlasmids:
             existingAnnotations.append(feat)
 
     for strang in straenge:
-        print("working on " + strang.name)
 
         for i in positions:
-            print("position: " + str(i))
+            print(datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S '), "position: " + str(i))
 
             pos = strang[i:plasmidlen+i]
             transPlas = pos.translate()
-            print("frame: ")
-            print(transPlas.seq)
             transPlaslen = len(transPlas)
 
             # Task 2
@@ -321,7 +324,7 @@ for plasmid in fiftyRandomPlasmids:
                     if specFeature.seq == pos.seq:
                         featureLocation = i + j*3
                         if featureLocation < plasmidlen:
-                            print("special feature on " + strang.name + " at position " + str(featureLocation))
+                            print(datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S '), "special feature on " + strang.name + " at position " + str(featureLocation))
                             if strang.name == "strand 1":
                                 strand=1
                             if strang.name == "strand -1":
@@ -331,13 +334,7 @@ for plasmid in fiftyRandomPlasmids:
                                                  type="misc_feature", strand=strand,
                                                  qualifiers={"note":[specFeature.name]})
                             plasmid.features.append(newSpec)
-                        # print(specFeature.seq)
-                        # print(pos.seq)
                     j += 1
-
-# Testoutput file after second task
-            # newFile2 = open("fileAfterPart2.gb", "w")
-            # SeqIO.write(fiftyRandomPlasmids, newFile2, "genbank")
 
             # Task 3
             openedFrame = bool(0)
@@ -346,82 +343,74 @@ for plasmid in fiftyRandomPlasmids:
             takeOnlyCareOfLongSequences = 0
 
             k = 0
-            while k < transPlaslen:
 
+            while k < transPlaslen:
                 if transPlas[k] == "M":
                     begin = k
                     openedFrame = bool(1)
                     takeOnlyCareOfLongSequences = 0
-
                 if transPlas[k] == "*":
-
-                    # only if "M" was found -> open reading frame -> closed by "*"
                     if openedFrame == bool(1):
                         end = k
-                        # "*" doesnt count
-                        openReadingFrame = strang[begin*3+i:end*3+i]
+                        openReadingFrame = strang[begin * 3 + counter:end * 3 + counter]
                         search = bool(0)
 
-                        if (takeOnlyCareOfLongSequences > 49):
-                            # check if already annotated
+                        if takeOnlyCareOfLongSequences > 49:
                             for anno in existingAnnotations:
-                                if (begin*3+i) != anno.location.start and (end*3+i) != anno.location.end:
+                                if (begin * 3 + counter) != anno.location.start and (end * 3 + counter) \
+                                        != anno.location.end:
                                     search = bool(1)
 
-                        # Take open reading frame if long enough & not yet annotated
                         if search == bool(1):
-                            if strang.name == "strand 1":
-                                strand = 1
-                            if strang.name == "strand -1":
-                                strand = -1
-                            openReadingFrames.append([openReadingFrame, begin*3+1, end*3+i, strand])
-                            print("long open reading frame at: " + str(begin*3+1))
-                            openedFrame = bool(0)
+                            openReadingFrames.append(openReadingFrame)
+
+                            if search == bool(1):
+                                if strang.name == "strand 1":
+                                    strand = 1
+                                if strang.name == "strand -1":
+                                    strand = -1
+
+
+                            print(datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S '),"Langes, offenes Leseraster gefunden! Warte auf Rückmeldung der online-BLAST-Suche. Please be patient!...")
+                            print(datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S ') + "Suche Sequenz: " + openReadingFrame)
+                            result_handle = NCBIWWW.qblast("blastx", "refseq_protein", openReadingFrame.seq)
+
+                            blastRecord = NCBIXML.read(result_handle)
+                            print(datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S '), "blastRecord: ", blastRecord)
+
+                            hit_title = blastRecord.alignments[0].title
+                            print(datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S '), hit_title)
+                            hit_seq = blastRecord.alignments[0].hsps[0].query
+                            print(datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S '), hit_seq)
+
+                            #frame = openReadingFrames[0]
+                            #i = 0
+                            #sameletters = 0
+                            #for letter in frame.translate().seq:
+                            #    if i == len(hit_seq):
+                            #        break
+                            #    if hit_seq[i] == letter:
+                            #        try:
+                            #            sameletters += 1
+                            #        except:
+                            #            print("out of bound")
+                            #similarity = sameletters / len(frame.seq)
+
+                            newHit = SeqFeature(FeatureLocation(start=begin, end=end), type="protein",
+                                                strand=strand,
+                                                qualifiers={"note": [hit_title]})
+                            plasmid.features.append(newHit)
+
+                        else:
+                            pass
+                        openedFrame = bool(0)
+                    else:
+                        pass
                 k += 1
                 takeOnlyCareOfLongSequences += 1
 
-            print("Finished open reading frames.")
+            print(datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S '), "Finished open reading frames.")
 
-    # BLAST
-    print("BLAST search starting.")
-    for opFr in openReadingFrames:
-
-        # Frame is SeqRecord of sequence
-        # opFr[1], opFr[2] contain position of start/end of sequence
-        frame = opFr[0]
-
-        result_handle = NCBIWWW.qblast("blastx", "refseq_protein", frame.seq)
-
-        blastRecord = NCBIXML.read(result_handle)
-        print("blastRecord")
-        print(blastRecord)
-
-        hit_title = blastRecord.alignments[0].title
-        print(hit_title)
-        hit_seq = blastRecord.alignments[0].hsps[0].query
-        print(hit_seq)
-
-        i = 0
-        sameletters = 0
-        for letter in frame.translate().seq:
-            if i == len(hit_seq):
-                break
-            if hit_seq[i] == letter:
-                try:
-                    sameletters += 1
-                except:
-                    print("out of bound")
-
-            i += 1
-
-        similarity = sameletters / len(frame.seq)
-
-        newHit = SeqFeature(FeatureLocation(start=opFr[1], end=opFr[2]), type="protein", strand=opFr[3], qualifiers={"note":[hit_title, "similarity = "+str(similarity)]})
-        plasmid.features.append(newHit)
-
-# Testoutput file after third task
-    # newFile3 = open("fileAfterPart3.gb", "w")
-    # SeqIO.write(fiftyRandomPlasmids, newFile3, "genbank")
 
 # Read dictionary from picklefile
 with open('testDump.pickle', 'rb') as handle:
@@ -442,7 +431,7 @@ for plasmid in fiftyRandomPlasmids:
         while counter < len(searchSequence):
             if searchSequence[counter:counter + seqLen].seq == seq:
                 if counter - plasmidLen < 0:
-                    print("Found at position: " + str(counter) + " in main strand")
+                    print(datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S '), "Found at position: " + str(counter) + " in main strand")
                     if additionalData[:3] == 'LTR':
                         note = additionalData[7:]
                         note = note[:-2]
@@ -575,7 +564,7 @@ for plasmid in fiftyRandomPlasmids:
 
             if searchSequence[counter:counter + seqLen].seq == seqRev:
                 if counter - plasmidLen < 0:
-                    print("Fount at position: " + str(plasmidLen - (counter + seqLen)) + " in complement strand")
+                    print(datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S '), "Fount at position: " + str(plasmidLen - (counter + seqLen)) + " in complement strand")
                     if additionalData[:3] == 'LTR':
                         note = additionalData[7:]
                         note = note[:-2]
@@ -710,4 +699,4 @@ for plasmid in fiftyRandomPlasmids:
 o_file = open("finalOutput.gb", "w")
 SeqIO.write(fiftyRandomPlasmids, o_file, "genbank")
 
-print("Done.")
+print(datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S '), "Done.")
