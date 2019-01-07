@@ -13,11 +13,12 @@ Plasmidannotation
 #TODO Längen durch 3 teilbar machen
 
 
-from Bio import SeqIO
+from Bio import SeqIO, SearchIO
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 from Bio.Blast import NCBIWWW, NCBIXML
 from random import *
 import os
+from Bio.SeqUtils import six_frame_translations
 
 #nur für Testzwecke
 from Bio.Seq import Seq
@@ -29,55 +30,28 @@ datapath = "C:/Users/daphne/Documents/fhnw/Bioinformatik/Projekt_Plasmidannotati
 
 fiftyRandomPlasmids = []
 i=0
-#(TODO): aktuell keine Sicherheit, dass es wirklich 50 werden.. aber das ist gerade nicht so wichtig
 for record in SeqIO.parse(datapath + "vectors.gb", "genbank"):
-    x = 1
-    #x = randint(0, 1)
-    #todo 10 auf 50 setzen
-    if (x == 1 and i < 10):
+    x = randint(0, 1)
+    if (x == 1 and i < 50):
         fiftyRandomPlasmids.append(record)
         i = i+1
+        print("untersuche folgende Records in der angegebenen Reihenfolge:")
         print(record.id + "\t " + str(i))
-        if i == 2:  break
 
-#print("fiftyRandomPlasmids")
-#print(fiftyRandomPlasmids)
 
-"""
-for record in fiftyRandomPlasmids:
-    output_file = open("fileWithoutAnnotations.gb", "w")
-    SeqIO.write(record, output_file, "genbank")
-    feature = SeqFeature(FeatureLocation(start=3, end=12), type="primer_bind", qualifiers={"note":["Hello"]})
-    record.features.append(feature)
-    for feat in record.features:
-        if feat.type == "primer_bind":
-            print(feat.type)
-            print(feat.qualifiers)
-            print(feat.qualifiers['note'][0])
-            feat.qualifiers["note"][0] = "ABC"
-            feat.qualifiers["note"].append("DEF")
-            feat.qualifiers["note"][1] = "GHI"
-            print(feat.qualifiers['note'][0])
-            print(feat.qualifiers)
-        for i in feat.qualifiers:
-            print(i)
-    print(record.annotations["source"])
-"""
-o_file = open("fileWithAnnotations.gb", "w")
-SeqIO.write(fiftyRandomPlasmids, o_file, "genbank")
-
+if i < 50:
+    for record in SeqIO.parse(datapath + "vectors.gb", "genbank"):
+        fiftyRandomPlasmids.append(record)
+        i += 1
+        if i == 49:    break
 
 
 
 #aus common_primer.mfasta Liste primerBindingSites erstellen
 primerBindingSites = []
-# da die Sequenz nur auf den Inhalt der letzten 15 Basen überprüft werden muss,
-# werden die Enden separat in der Liste primerBindingEndings gespeichert
-primerBindingSiteEndings = []
 for record in SeqIO.parse(datapath + "common_primer.mfasta", "fasta"):
-    primerBindingSites.append(record)
     recordEnding = record[-15:-1]+record[-1]
-    primerBindingSiteEndings.append(recordEnding)
+    primerBindingSites.append([record,recordEnding])
 
 
 # aus tags_epitropes.mfasta Liste specialTranslatedFeatures erstellen
@@ -85,75 +59,113 @@ specialTranslatedFeatures = []
 for record in SeqIO.parse(datapath + "tags_epitopes.mfasta", "fasta"):
     specialTranslatedFeatures.append(record)
 
-"""für Testzwecke:
-newfeature = SeqRecord(Seq("ILLVCF"), id="Testfeature")
-print(newfeature.seq)
-specialTranslatedFeatures.append(newfeature)
-"""
 
 #Teilaufgabe 1
-#todo später Funktion daraus machen
 for plasmid in fiftyRandomPlasmids:
     plasmidlen = len(plasmid)
+
     searchsequence = plasmid + plasmid
-    for prim in primerBindingSiteEndings:
+    searchsequencelen = len(searchsequence)
 
-        seq = prim.seq
-        seqRev = prim.reverse_complement().seq
-        # Achtung, Länge des Motivs wird als Ausgangspunkt gewählt, d.h. bitte schon richtig übergeben
-        seqlen = len(prim)
+    longseqStart = 0
+    longseqEnd = 0
+    longseqStartRev = 0
+    longseqEndRev = 0
 
-        #todo brauche für Verallgemeinerung noch motifRevComp, das überprüft wird
+
+    #Teilaufgabe1
+
+    for prim in primerBindingSites:
+
+        shortseq = prim[1].seq
+        shortseqRev = prim[1].reverse_complement().seq
+        # Länge des Motivs wird als Ausgangspunkt gewählt, d.h. bitte schon richtig übergeben
+        shortseqlen = len(shortseq)
+
+        longseq = prim[0].seq
+        longseqRev = prim[0].reverse_complement().seq
+        longseqlen = len(longseq)
+
         i = 0
-        while i < len(searchsequence):
-            if searchsequence[i:i+seqlen].seq == seq:
-                if i -  plasmidlen < 0:
-                    print("gefunden an Stelle: " + str(i) + " im Vorderstrang")
-                    newPrimer = SeqFeature(FeatureLocation(start=i, end=i+seqlen), type="primer_bind", strand=1, qualifiers={"note":[prim.name]})
+        while i < searchsequencelen:
+
+            if i - plasmidlen < 0:
+
+                #Suche nach Übereinstimmungen auf dem Vorderstrang
+
+                longseqStart = i
+                longseqEnd = i+longseqlen
+
+                shortseqStart = i + (longseqlen-shortseqlen)
+                foundPrim = bool(0)
+
+                if searchsequence[longseqStart:longseqEnd].seq == longseq:
+                    foundPrim = bool(1)
+                    newPrimer = SeqFeature(FeatureLocation(start=longseqStart, end=longseqEnd), type="primer_bind", strand=1, qualifiers={"note":[prim[0].name, "perfect match"]})
+                elif searchsequence[shortseqStart:longseqEnd].seq == shortseq:
+                    foundPrim = bool(1)
+                    newPrimer = SeqFeature(FeatureLocation(start=longseqStart, end=longseqEnd), type="primer_bind", strand=1, qualifiers={"note":[prim[0].name, "partial match"]})
+
+                if foundPrim == bool(1):
                     plasmid.features.append(newPrimer)
-                    #TODO  The feature.qualifier note shall also indicate in the whether there is only a partial (but perfect match to 15 bases of the 3’ end of the primer).
-            if searchsequence[i:i+seqlen].seq == seqRev:
-                if i - plasmidlen < 0:
-                    print("gefunden an Stelle: " + str(plasmidlen - (i + seqlen)) + " im Gegenstrang")
-                    newPrimer = SeqFeature(FeatureLocation(start=plasmidlen-(i+seqlen), end=plasmidlen-i), type="primer_bind", strand=-1, qualifiers={"note":[prim.name]})
+                    print("Primer auf dem Vorderstrang gefunden. Position: " + str(i))
+                    print(longseqStart)
+                    print(longseqEnd)
+
+                #Suche mit dem reversen Komplement, um Postionen auf dem Gegenstrang zu finden
+
+                longseqRevStart = plasmidlen - (i + longseqlen)
+                longseqRevEnd = plasmidlen - i
+
+                shortseqRevStart = plasmidlen - (i + shortseqlen)
+                foundRevPrim = bool(0)
+
+                if searchsequence[longseqRevStart:longseqRevEnd].seq == longseqRev:
+                    foundRevPrim = bool(1)
+                    newPrimer = SeqFeature(FeatureLocation(start=longseqRevStart, end=longseqRevEnd), type="primer_bind", strand=-1, qualifiers={"note":[prim[0].name, "perfect match"]})
+                elif searchsequence[shortseqRevStart:longseqEnd].seq == shortseqRev:
+                    foundRevPrim = bool(1)
+                    newPrimer = SeqFeature(FeatureLocation(start=longseqRevStart, end=longseqRevEnd), type="primer_bind", strand=-1, qualifiers={"note":[prim[0].name, "partial match"]})
+
+                if foundRevPrim == bool(1):
                     plasmid.features.append(newPrimer)
-                    #TODO  The feature.qualifier note shall also indicate in the whether there is only a partial (but perfect match to 15 bases of the 3’ end of the primer).
+                    print("Primer auf dem Gegenstrang gefunden. Position: " + str(longseqRevStart))
+                    print(shortseqRevStart)
+                    print(longseqRevEnd)
+
             i += 1
 
-print("ready")
+    print("ready")
 
-newFile = open("fileAfterPart12.gb", "w")
-SeqIO.write(fiftyRandomPlasmids, newFile, "genbank")
+    newFile = open("fileAfterPart1.gb", "w")
+    SeqIO.write(fiftyRandomPlasmids, newFile, "genbank")
 
 
-for plasmid in fiftyRandomPlasmids:
+
     vorderstrang = plasmid + plasmid
     vorderstrang.name = "vorderstrang"
     gegenstrang = vorderstrang.reverse_complement()
     gegenstrang.name = "gegenstrang"
     straenge = [vorderstrang, gegenstrang]
     positions = [0,1,2]
-    plasmidlen = len(plasmid)
 
-    print("hello")
+
     openReadingFrames = []
     existingAnnotations = []
     for feat in plasmid.features:
         if feat.type == "CDS" or feat.type == "rep_origin":
             existingAnnotations.append(feat)
-            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        print("feat type start")
-        print(feat.type)
-        print(feat.location)
-        print(feat.location.start)
-        print("feat type end")
+
 
     for strang in straenge:
-        print(straenge[1])
+        print("behandle den " + strang.name)
+
         for i in positions:
-            print(i)
-            pos = strang[i:]
+            print("position: " + str(i))
+
+            pos = strang[i:plasmidlen+i]
             transPlas = pos.translate()
+            print("frame sieht folgendermaßen aus: ")
             print(transPlas.seq)
             transPlaslen = len(transPlas)
 
@@ -166,83 +178,125 @@ for plasmid in fiftyRandomPlasmids:
                 while j < transPlaslen:
                     pos = transPlas[j:(j+specFeaturelen)]
                     if specFeature.seq == pos.seq:
-                        print(len(plasmid))
                         featureLocation = i + j*3
                         if featureLocation < plasmidlen:
-                            print("Found it! Strang " + strang.description + " +Position " + str(featureLocation))
-                            if strang.name == "vorderstrang":
-                                strand=1
-                            if strang.name == "gegenstrang":
-                                strand=-1
+                            print("special feature auf dem " + strang.name + " an Position " + str(featureLocation) + " gefunden.")
+                            if strang.name == "vorderstrang":   strand=1
+                            if strang.name == "gegenstrang":    strand=-1
                             newSpec = SeqFeature(FeatureLocation(start=featureLocation, end=featureLocation+specFeaturelen*3), type="misc_feature", strand=strand, qualifiers={"note":[specFeature.name]})
                             plasmid.features.append(newSpec)
-                        else:
-                            print("Wiederholungstäter der Stelle " + str(featureLocation-plasmidlen))
-                        print(specFeature.seq)
-                        print(pos.seq)
+                        #print(specFeature.seq)
+                        #print(pos.seq)
                     j += 1
 
 
             newFile2 = open("fileAfterPart2.gb", "w")
             SeqIO.write(fiftyRandomPlasmids, newFile2, "genbank")
 
+
+
             #Teilaufgabe 3
 
             openedFrame = bool(0)
-            print(openedFrame)
             begin = 0
             end = 0
             takeOnlyCareOfLongSequences = 0
 
             k = 0
             while k < transPlaslen:
+
                 if transPlas[k] == "M":
                     begin = k
                     openedFrame = bool(1)
                     takeOnlyCareOfLongSequences = 0
+
                 if transPlas[k] == "*":
+
+                    # nur wenn vorhergehend ein "M" gefunden wurde, das die Überprüfung der Sequenz zulässt,
+                    # wird ein offenes Leseraster durch den ersten Stern geschlossen
+                    # --> zwei "*" hintereinander haben keinen Einfluss, denn Leseraster wurde nicht geöffnet
                     if openedFrame == bool(1):
                         end = k
 
-                        # das * wird nicht mehr dazugezählt --> Auslesen bis zur Stelle des Endes
+                        # das "*" wird nicht mehr dazugezählt, deswegen kann seine Stelle als Ende des Strangs angegeben werden
                         openReadingFrame = strang[begin*3+i:end*3+i]
                         search = bool(0)
 
-                        #todo: später 199 auf 49 setzen
                         if (takeOnlyCareOfLongSequences > 49):
-                            #TODO: vorher überprüfen, ob bereits im gb-file annotiert
+                            #vorher überprüfen, ob bereits im gb-file annotiert
                             for anno in existingAnnotations:
                                 if (begin*3+i) != anno.location.start and (end*3+i) != anno.location.end:
                                     search = bool(1)
 
 
+                        # nehme openReadingFrame in Suchliste auf, aber nur
+                        # wenn sie a) lang genug ist und b) noch nicht im gb-File annotiert ist
                         if search == bool(1):
-                            openReadingFrames.append(openReadingFrame)
+                            if strang.name == "vorderstrang":   strand=1
+                            if strang.name == "gegenstrang":    strand=-1
 
-                            print("Langes, offenes Leseraster gefunden! Warte auf Rückmeldung der online-BLAST-Suche.")
-                            print("Suche Sequenz: " + openReadingFrame)
-                            result_handle = NCBIWWW.qblast("blastx", "refseq_protein", openReadingFrame.seq)
+                            openReadingFrames.append([openReadingFrame, begin*3+1, end*3+i, strand])
+                            print("langes, offenes Leseraster gefunden an Stelle " + str(begin*3+1))
 
-                            blast_result = open("my_blast.xml", "w")
-                            blast_result.write(result_handle.read())
-                            blast_result.close()
-                            result_handle.close()
-
-                            hit = NCBIXML.read(open("my_blast.xml"))
-                            hit_title = hit.alignments[0].title  #[:60]  # evtl. Titel kürzen
-                            print(hit_title)
-                            newHit = SeqFeature(FeatureLocation(start=begin*3+i, end=end*3+i), type="protein", strand=1, qualifiers={"note":[hit_title]})
-                            plasmid.features.append(newHit)
-                            
-
-                            os.remove("my_blast.xml")
-                        else:
-                            print("sequence is to short")
-                        openedFrame = bool(0)
-                    else:
-                        print("counldn't find a new point to start for opening the reading frame")
+                            # "schließe" die Sequenz wieder --> erst muss ein neuer Anfang gefunden werden,
+                            #  der das Überprüfen einer neuen Sequenz zulässt
+                            openedFrame = bool(0)
                 k += 1
                 takeOnlyCareOfLongSequences += 1
 
-newFile3 = open("fileAfterPart3.gb", "w")
-SeqIO.write(fiftyRandomPlasmids, newFile3, "genbank")
+            print("Habe alle offenen Leseraster des Plasmids aufgenommen.")
+
+
+    # alle offenen Leseraster, die bisher nicht annotiert waren, werden nun über die Blastsuche identifiziert
+    #blast_result = open("my_blast.xml", "w")
+    print("BLAST-Suche startet.")
+    for opFr in openReadingFrames:
+
+        # frame ist der SeqRecord der zu suchenden Sequenz
+        # opFr[1] bzw. opFr[2] beinhalten die Position des Starts bzw. des Endes der Sequenz
+        frame = opFr[0]
+
+        # suche Sequenz über das Internet in der Protein-Datenbank
+        result_handle = NCBIWWW.qblast("blastx", "refseq_protein", frame.seq)
+
+        # schreibe die erhaltenen Ergebnisse in die Datei "my_blast.xml"
+        #blast_result.write(result_handle.read())
+        #blastResult = open("my_blast.xml")
+
+        blastRecord = NCBIXML.read(result_handle)
+        print("blastRecord")
+        print(blastRecord)
+
+        hit_title = blastRecord.alignments[0].title
+        print(hit_title)
+        hit_seq = blastRecord.alignments[0].hsps[0].query
+        print(hit_seq)
+
+        i=0
+        sameletters=0
+        for letter in frame.translate().seq:
+
+            if i == len(hit_seq):
+                break
+
+            if hit_seq[i] == letter:
+                try:
+                    sameletters += 1
+                except:
+                    print("out of bound")
+
+            i += 1
+
+        similarity = sameletters / len(frame.seq)
+        print(sameletters + " von " + len(frame.seq) + " stimmen überein.")
+
+        newHit = SeqFeature(FeatureLocation(start=opFr[1], end=opFr[2]), type="protein", strand=opFr[3], qualifiers={"note":[hit_title, "similarity = "+str(similarity)]})
+        plasmid.features.append(newHit)
+
+    newFile3 = open("fileAfterPart3.gb", "w")
+    SeqIO.write(fiftyRandomPlasmids, newFile3, "genbank")
+
+
+
+o_file = open("fileWithAnnotations.gb", "w")
+SeqIO.write(fiftyRandomPlasmids, o_file, "genbank")
