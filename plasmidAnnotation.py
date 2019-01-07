@@ -20,7 +20,7 @@ import pickle
 
 # Create the dictionary from vectors
 '''File to read'''
-inputFile = "vectors.gb"
+inputFile = "/Users/deniztosoni/FHNW/bioinformatik/daten plasmid annotation 2.0/vectors.gb"
 
 '''Initialise dictionary'''
 featureDict = dict()
@@ -155,13 +155,13 @@ with open('testDump.pickle', 'rb') as handle:
 # is it really the same? -> yes!
 # print(testIt == unserialized_data)
 
-datapath = ""
+datapath = "/Users/deniztosoni/FHNW/bioinformatik/daten plasmid annotation 2.0/"
 
 fiftyRandomPlasmids = []
 i=0
 for record in SeqIO.parse(datapath + "vectors.gb", "genbank"):
     x = randint(0, 1)
-    if x == 1 and i < 50:
+    if x == 1 and i < 2:
         fiftyRandomPlasmids.append(record)
         i = i+1
         print("untersuche folgende Records in der angegebenen Reihenfolge:")
@@ -381,7 +381,7 @@ for plasmid in fiftyRandomPlasmids:
             i += 1
 
         similarity = sameletters / len(frame.seq)
-        print(sameletters + " von " + len(frame.seq) + " stimmen überein.")
+        print("".join(sameletters) + " von " + "".join(len(frame.seq)) + " stimmen überein.")
 
         newHit = SeqFeature(FeatureLocation(start=opFr[1], end=opFr[2]), type="protein", strand=opFr[3], qualifiers={"note":[hit_title, "similarity = "+str(similarity)]})
         plasmid.features.append(newHit)
