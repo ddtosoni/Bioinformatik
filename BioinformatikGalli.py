@@ -359,7 +359,7 @@ for plasmid in fiftyRandomPlasmids:
                             hit_title = hit.alignments[0].title
                             print(hit_title)
                             newHit = SeqFeature(FeatureLocation(start=begin * 3 + counter,
-                                                                end=end * 3 + counter),
+                                                end=end * 3 + counter),
                                                 type="protein",
                                                 strand=1,
                                                 qualifiers={"note": [hit_title]})
