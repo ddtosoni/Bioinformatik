@@ -1,31 +1,52 @@
-#---------------------------------
+# ------------------------------------------
 # Plasmidannotation
 #
-#---------------------------------
+# ------------------------------------------
 # Bioinformatik -  Projekt 2
 #
-#---------------------------------
+# ------------------------------------------
 # Date:           07.01.2019
 #
-#---------------------------------
+# ------------------------------------------
 # Authors:
 #
 # Auer Daphne
 # Galli Christopher
 # Tosoni Deniz
 #
-#---------------------------------
+# ------------------------------------------
 # Description:
 #
 # This program combines the following
-# approaches:
+# approaches and does recognition and
+# annotation for all of them:
 #
-# 1.
+# 1. Common Features
+#
 # Based on a number of annotated plasmid
 # sequences in .gb format, common
-# features BLABLA WILL DO MORE, THIS RUNS!!
+# features of plasmids are extracted and
+# a list of these features is build up.
 #
-#---------------------------------
+# 2. Primer binding sites
+#
+# A list of common primers and its
+# sequences will be provided.
+#
+# 3. Special translated features
+#
+# For genetic engineering proteins may
+# contain additional peptide sequences
+# with special functions, e.g. epitopes,
+# tag etc.
+#
+# 4. Protein coding genes
+#
+# Protein coding genes not substantially
+# overlapping with the common features will
+# be identified through a BLAST request.
+
+# ------------------------------------------
 # Imports:
 from Bio import SeqIO
 from Bio.SeqFeature import SeqFeature, FeatureLocation
@@ -35,9 +56,9 @@ from collections import defaultdict
 from itertools import chain
 from random import *
 import pickle
-#---------------------------------
+# ------------------------------------------
 # File to read
-inputFile = "/Users/deniztosoni/FHNW/bioinformatik/daten plasmid annotation 2.0/vectors.gb"
+inputFile = "vectors.gb"
 
 # Initialise dictionary
 featureDict = dict()
@@ -157,10 +178,11 @@ for (x, y), z in zip(finalDictionary.values(), finalDictionary.keys()):
     if y > newVal:
         resultDict[insertKey] = y, z
 
+# Save dictionary as pickle file
 with open('testDump.pickle', 'wb') as handle:
     pickle.dump(resultDict, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-datapath = "/Users/deniztosoni/FHNW/bioinformatik/daten plasmid annotation 2.0/"
+datapath = ""
 
 # Take 50 random plasmids from the file
 fiftyRandomPlasmids = []
@@ -401,6 +423,7 @@ for plasmid in fiftyRandomPlasmids:
     # newFile3 = open("fileAfterPart3.gb", "w")
     # SeqIO.write(fiftyRandomPlasmids, newFile3, "genbank")
 
+# Read dictionary from picklefile
 with open('testDump.pickle', 'rb') as handle:
     unserializedData = pickle.load(handle)
 
