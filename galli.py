@@ -191,6 +191,7 @@ fiftyRandomPlasmids = []
 i = 0
 counter = 0
 
+#Use this section to check the first sequence from vectors.gb
 for record in SeqIO.parse(datapath + "vectors.gb", "genbank"):
     if counter < 10:
         fiftyRandomPlasmids.append(record)
@@ -198,6 +199,8 @@ for record in SeqIO.parse(datapath + "vectors.gb", "genbank"):
         print(datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S ') + record.id + "\t " + str(counter))
         if counter == 1:
             break
+            
+#Use this section to generate 50 random sequences from vectors.gb file           
 #for record in SeqIO.parse(datapath + "vectors.gb", "genbank"):
 #    fiftyRandomPlasmids.append(record)
 #    x = randint(0, 1)
@@ -369,8 +372,7 @@ for plasmid in fiftyRandomPlasmids:
                                     strand = -1
 
 
-                            print(datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S '),"Langes, offenes Leseraster gefunden! Warte auf Rückmeldung der online-BLAST-Suche.")
-                            print(datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S '),"Please be patient!...")
+                            print(datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S '),"Langes, offenes Leseraster gefunden! Warte auf Rückmeldung der online-BLAST-Suche. Please be patient!...")
                             print(datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S ') + "Suche Sequenz: " + openReadingFrame)
                             result_handle = NCBIWWW.qblast("blastx", "refseq_protein", openReadingFrame.seq)
 
