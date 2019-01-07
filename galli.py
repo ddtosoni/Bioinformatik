@@ -2,7 +2,7 @@ from Bio import SeqIO
 from collections import Counter
 from itertools import chain
 from collections import defaultdict
-
+import pickle
 
 '''File to read'''
 inputFile = "/Users/deniztosoni/FHNW/bioinformatik/daten plasmid annotation 2.0/vectors.gb"
@@ -138,7 +138,7 @@ for k in list(finalDictionary.keys()):
 testIt = dict()
 
 for (x, y), z in zip(finalDictionary.values(), finalDictionary.keys()):
-        insertKey = ''.join(str(vals) + ', ' for vals in x)
+        insertKey = ''.join(str(vals) + '||' for vals in x)
         insertKey = insertKey[:-2]
         if testIt.get(insertKey) is None:
             testIt[insertKey] = y, z
@@ -149,13 +149,16 @@ for (x, y), z in zip(finalDictionary.values(), finalDictionary.keys()):
 for i in testIt.items():
     print(i)
 
+# save data as pickle file
+with open('testDump.pickle', 'wb') as handle:
+    pickle.dump(testIt, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-newFinalDict = dict()
+# read the pickle file
+with open('testDump.pickle', 'rb') as handle:
+    unserialized_data = pickle.load(handle)
+
+# is it really the same? -> yes!
+# print(testIt == unserialized_data)
 
 
-print("ULU")
-for i in newFinalDict.items():
-    print(i)
-print("ULU")
 
-print(len(newFinalDict))
