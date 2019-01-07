@@ -161,7 +161,7 @@ fiftyRandomPlasmids = []
 i=0
 for record in SeqIO.parse(datapath + "vectors.gb", "genbank"):
     x = randint(0, 1)
-    if x == 1 and i < 2:
+    if x == 1 and i < 50:
         fiftyRandomPlasmids.append(record)
         i = i+1
         print("untersuche folgende Records in der angegebenen Reihenfolge:")
@@ -381,7 +381,6 @@ for plasmid in fiftyRandomPlasmids:
             i += 1
 
         similarity = sameletters / len(frame.seq)
-        print("".join(sameletters) + " von " + "".join(len(frame.seq)) + " stimmen überein.")
 
         newHit = SeqFeature(FeatureLocation(start=opFr[1], end=opFr[2]), type="protein", strand=opFr[3], qualifiers={"note":[hit_title, "similarity = "+str(similarity)]})
         plasmid.features.append(newHit)
