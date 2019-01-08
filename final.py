@@ -172,7 +172,7 @@ for k in list(finalDictionary.keys()):
         del featureDict[k]
 
 for (x, y), z in zip(finalDictionary.values(), finalDictionary.keys()):
-    insertKey = ''.join(str(vals) + ', ' for vals in x)
+    insertKey = ''.join(str(vals) + '||' for vals in x)
     insertKey = insertKey[:-2]
     if resultDict.get(insertKey) is None:
         resultDict[insertKey] = y, z
